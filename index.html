@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevStudio</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase через CDN (надежно) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header>
+    <div class="logo">⚡ DevStudio</div>
+    <nav>
+        <button onclick="show('home')" class="active">Главная</button>
+        <button onclick="show('portfolio')">Портфолио</button>
+        <button onclick="show('order')">Заказать</button>
+        <button onclick="show('check')">Мои заказы</button>
+    </nav>
+</header>
+
+<div class="container">
+    <!-- Главная -->
+    <div id="home" class="section active">
+        <h1>Разработка ботов и сайтов</h1>
+        <p style="color: var(--text-mute); margin-bottom: 20px;">Быстро, качественно, с гарантией.</p>
+        <button class="btn" onclick="show('order')">Оформить заказ</button>
+        <button class="btn" style="background: var(--card); border: 1px solid #334155;" onclick="show('portfolio')">Смотреть работы</button>
+    </div>
+
+    <!-- Портфолио -->
+    <div id="portfolio" class="section">
+        <h2>📂 Готовые проекты</h2>
+        <div id="portfolio-list">Загрузка...</div>
+    </div>
+
+    <!-- Форма заказа -->
+    <div id="order" class="section">
+        <h2>📝 Новый заказ</h2>
+        <form id="orderForm">
+            <input type="text" id="name" placeholder="Ваше имя" required>
+            <input type="text" id="contact" placeholder="Telegram или Email" required>
+            <select id="type">
+                <option value="Бот">Telegram Бот</option>
+                <option value="Сайт">Сайт</option>
+                <option value="Другое">Другое</option>
+            </select>
+            <textarea id="desc" rows="5" placeholder="Опишите задачу..."></textarea>
+            <button type="submit" class="btn btn-full">Отправить заявку</button>
+        </form>
+        <div id="orderResult" style="margin-top: 20px; display: none; text-align: center;">
+            <p style="color: var(--success); font-size: 1.2rem;">✅ Заявка принята!</p>
+            <p style="color: var(--text-mute);">Ваш код для проверки: <b id="secretCode" style="color: white; font-size: 1.4rem;"></b></p>
+            <p style="font-size: 0.9rem; color: var(--text-mute);">Сохрани этот код, чтобы отслеживать статус.</p>
+            <button class="btn" onclick="show('check')">Перейти к проверке</button>
+        </div>
+    </div>
+
+    <!-- Проверка заказа -->
+    <div id="check" class="section">
+        <h2>🔍 Проверка статуса</h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="checkCode" placeholder="Введите код заказа" style="margin:0;">
+            <button class="btn" onclick="checkOrder()">Найти</button>
+        </div>
+        <div id="checkResult"></div>
+    </div>
+</div>
+
+<script>
+    // --- НАСТРОЙКИ SUPABASE (ВСТАВЬ СВОИ ДАННЫЕ) ---
+    const SUPABASE_URL = 'https://hufcamhbzyksmhebreys.supabase.co'; 
+    const SUPABASE_KEY = 'sb_secret_zfsjhARVIxjl0SOSnhovSA_jgf3tZnX';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Навигация
+    function show(id) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        if(id === 'portfolio') loadPortfolio();
+    }
+
+    // Отправка заказа
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const secret = Math.random().toString(36).substring(2, 8).toUpperCase();
+        
+        const { error } = await supabase.from('orders').insert({
+            name: document.getElementById('name').value,
+            contact: document.getElementById('contact').value,
+            type: document.getElementById('type').value,
+            desc: document.getElementById('desc').value,
+            secret: secret,
+            status: 'new'
+        });
+
+        if (error) {
+            alert('Ошибка отправки: ' + error.message);
+            console.error(error);
+        } else {
+            document.getElementById('orderForm').style.display = 'none';
+            document.getElementById('secretCode').innerText = secret;
+            document.getElementById('orderResult').style.display = 'block';
+        }
+    });
+
+    // Проверка заказа
+    async function checkOrder() {
+        const code = document.getElementById('checkCode').value.toUpperCase();
+        const res = document.getElementById('checkResult');
+        res.innerHTML = '<p>Поиск...</p>';
+
+        const { data, error } = await supabase.from('orders').select('*').eq('secret', code).single();
+
+        if (!data || error) {
+            res.innerHTML = '<p style="color: var(--danger)">❌ Заказ не найден</p>';
+            return;
+        }
+
+        let statusHtml = data.status === 'done' 
+            ? '<span class="status-badge status-done">✅ Готов</span>' 
+            : '<span class="status-badge status-new">🔄 В работе</span>';
+
+        res.innerHTML = `
+            <div class="card">
+                <h3>Заказ #${data.id}</h3>
+                <p>Тип: ${data.type}</p>
+                <p>Задача: ${data.desc}</p>
+                <p>Статус: ${statusHtml}</p>
+                ${data.status === 'done' && data.file_link ? `<a href="${data.file_link}" class="btn btn-full" style="margin-top:10px">⬇️ Скачать</a>` : ''}
+            </div>
+        `;
+    }
+
+    // Загрузка портфолио (пока заглушка)
+    async function loadPortfolio() {
+        const list = document.getElementById('portfolio-list');
+        // Здесь можно подключить запрос к БД portfolio
+        list.innerHTML = `
+            <div class="card"><h3>Магазин в Telegram</h3><p>Бот для продажи товаров с корзиной.</p></div>
+            <div class="card"><h3>Корпоративный сайт</h3><p>Лендинг для строительной компании.</p></div>
+        `;
+    }
+</script>
+</body>
+</html>

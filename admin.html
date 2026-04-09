@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header>
+    <div class="logo">🔐 Админка</div>
+    <a href="index.html" class="btn" style="font-size: 0.9rem;">На сайт</a>
+</header>
+
+<div class="container">
+    <!-- Вход -->
+    <div id="login-screen" class="section active" style="text-align: center; margin-top: 100px;">
+        <h2>Вход</h2>
+        <input type="password" id="passInput" placeholder="Пароль" style="max-width: 300px; margin: 0 auto;">
+        <button class="btn" onclick="login()">Войти</button>
+    </div>
+
+    <!-- Панель -->
+    <div id="admin-panel" class="section">
+        <h2>📦 Заявки</h2>
+        <div id="orders-list">Загрузка...</div>
+    </div>
+</div>
+
+<script>
+    // --- НАСТРОЙКИ SUPABASE ---
+    const SUPABASE_URL = 'https://hufcamhbzyksmhebreys.supabase.co';
+    const SUPABASE_KEY = 'sb_secret_zfsjhARVIxjl0SOSnhovSA_jgf3tZnX';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function login() {
+        if(document.getElementById('passInput').value === 'admin') {
+            document.getElementById('login-screen').classList.remove('active');
+            document.getElementById('admin-panel').classList.add('active');
+            loadOrders();
+        } else {
+            alert('Неверный пароль');
+        }
+    }
+
+    async function loadOrders() {
+        const list = document.getElementById('orders-list');
+        const { data, error } = await supabase.from('orders').select('*').order('id', { ascending: false });
+        
+        if(error) { list.innerHTML = 'Ошибка БД: ' + error.message; return; }
+
+        list.innerHTML = data.map(order => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                    <div>
+                        <h3>#${order.id} ${order.name}</h3>
+                        <p style="color:var(--text-mute)">${order.contact} • ${order.type}</p>
+                    </div>
+                    <span class="status-badge ${order.status === 'done' ? 'status-done' : 'status-new'}">
+                        ${order.status === 'done' ? '✅ Готов' : '🆕 Новый'}
+                    </span>
+                </div>
+                <p>${order.desc}</p>
+                <hr style="border-color:#334155; margin: 10px 0;">
+                <div class="admin-actions">
+                    <input type="text" id="link-${order.id}" placeholder="Ссылка на готовый файл" style="flex:1; margin:0;">
+                    <button class="btn" style="background:var(--success)" onclick="completeOrder(${order.id})">Готово</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function completeOrder(id) {
+        const link = document.getElementById(`link-${id}`).value;
+        if(!link) { alert('Вставь ссылку на файл (Google Drive, Яндекс.Диск и т.д.)'); return; }
+
+        const { error } = await supabase.from('orders').update({ 
+            status: 'done',
+            file_link: link
+        }).eq('id', id);
+
+        if(error) alert('Ошибка: ' + error.message);
+        else { alert('Заказ выполнен!'); loadOrders(); }
+    }
+</script>
+</body>
+</html>
