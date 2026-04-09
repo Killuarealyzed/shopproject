@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DevStudio — Разработка под ключ</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Навигация -->
+  <nav class="nav">
+    <div class="logo" onclick="showSection('home')">⚡ DevStudio</div>
+    <div class="nav__links">
+      <a onclick="showSection('portfolio')" class="active">📦 Портфолио</a>
+      <a onclick="showSection('order')">🛠️ Заказать</a>
+      <a onclick="showSection('my-orders')">📋 Мои заказы</a>
+      <a href="admin.html">🔐 Админ</a>
+    </div>
+  </nav>
+
+  <!-- Главная -->
+  <section id="home" class="section active">
+    <div style="text-align:center;padding:60px 20px">
+      <h1 style="font-size:clamp(2rem,5vw,3rem);margin-bottom:20px">
+        Разработка <span style="background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent">сайтов и приложений</span>
+      </h1>
+      <p style="color:var(--text-muted);margin-bottom:30px;font-size:1.1rem">
+        Быстро. Качественно. С поддержкой.
+      </p>
+      <button class="btn" onclick="showSection('order')">Оформить заказ</button>
+      <button class="btn btn--secondary" onclick="showSection('portfolio')" style="margin-left:12px">Смотреть работы</button>
+    </div>
+  </section>
+
+  <!-- Портфолио -->
+  <section id="portfolio" class="section">
+    <h2 style="text-align:center;margin-bottom:30px">📦 Готовые проекты</h2>
+    <p style="text-align:center;color:var(--text-muted);margin-bottom:20px">
+      Нажмите на карточку, чтобы посмотреть детали. Скачивание доступно после заказа.
+    </p>
+    <div id="portfolioGrid" class="grid"></div>
+  </section>
+
+  <!-- Форма заказа -->
+  <section id="order" class="section">
+    <h2 style="text-align:center;margin-bottom:30px">🛠️ Заказать разработку</h2>
+    <form id="orderForm" class="form">
+      <input type="text" name="name" placeholder="Ваше имя *" required />
+      <input type="email" name="email" placeholder="Email для связи" />
+      <select name="type" required>
+        <option value="">Выберите тип заказа</option>
+        <option value="bot">Telegram-бот</option>
+        <option value="site">Сайт / лендинг</option>
+        <option value="script">Скрипт / автоматизация</option>
+        <option value="other">Другое</option>
+      </select>
+      <textarea name="description" placeholder="Опишите задачу: что нужно сделать, сроки, пожелания *" required></textarea>
+      <button type="submit" class="btn btn--full">Отправить заявку</button>
+    </form>
+    <div id="orderStatus" style="text-align:center;margin-top:20px;font-weight:500"></div>
+    
+    <div id="orderSuccess" style="display:none;text-align:center;margin-top:30px">
+      <p style="color:var(--success);font-size:1.1rem;margin-bottom:15px">✅ Заявка принята!</p>
+      <p style="color:var(--text-muted);margin-bottom:20px">
+        Ваш номер заказа: <strong id="newOrderId" style="color:var(--text)"></strong>
+      </p>
+      <p style="color:var(--text-muted);margin-bottom:20px">
+        🔐 Сохраните этот код, чтобы отслеживать статус:
+      </p>
+      <div style="background:var(--bg-alt);padding:12px 20px;border-radius:10px;font-family:monospace;font-size:1.1rem;margin-bottom:20px" id="secretCode"></div>
+      <button class="btn" onclick="showSection('my-orders')">Перейти к отслеживанию</button>
+    </div>
+  </section>
+
+  <!-- Мои заказы -->
+  <section id="my-orders" class="section">
+    <h2 style="text-align:center;margin-bottom:30px">📋 Отслеживание заказа</h2>
+    <div style="max-width:400px;margin:0 auto;display:flex;gap:10px;margin-bottom:30px">
+      <input type="text" id="trackSecret" placeholder="Введите код заказа" style="flex:1" />
+      <button class="btn" onclick="trackOrder()">Найти</button>
+    </div>
+    
+    <div id="orderDetails" style="display:none;max-width:600px;margin:0 auto;background:var(--bg-alt);border:1px solid var(--border);border-radius:16px;padding:25px">
+      <h3 style="margin-bottom:15px">Заказ #<span id="trackId"></span></h3>
+      <div style="margin-bottom:15px">
+        <span style="color:var(--text-muted)">Статус:</span>
+        <span id="trackStatus" class="status-badge" style="margin-left:10px"></span>
+      </div>
+      <p id="trackDesc" style="margin-bottom:20px"></p>
+      
+      <div id="resultBlock" style="display:none">
+        <p style="color:var(--success);margin-bottom:10px">✅ Работа готова!</p>
+        <a id="downloadLink" href="#" target="_blank" class="btn btn--success btn--full">⬇️ Скачать результат</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Модальное окно: просмотр проекта -->
+  <div id="projectModal" class="modal">
+    <div class="modal__content">
+      <span class="modal__close">&times;</span>
+      <h3 id="modalTitle" style="margin-bottom:15px"></h3>
+      <div id="modalPreview" style="margin-bottom:15px"></div>
+      <p id="modalDesc" style="color:var(--text-muted);margin-bottom:20px"></p>
+      <p id="modalPrice" style="color:var(--accent);font-weight:600;margin-bottom:20px"></p>
+      <button class="btn btn--full" onclick="document.getElementById('projectModal').classList.remove('active');showSection('order')">Заказать похожее</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
